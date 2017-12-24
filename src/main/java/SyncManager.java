@@ -25,13 +25,13 @@ public class SyncManager {
     }
 
     public void syncPut(String key, String val) throws IOException {
-        Msg msg = new Msg(Operation.PUT, key, val);
-        byte [] byteMessage = SerializationUtils.serialize(msg);
+        DataSent dataSent = new DataSent(Operation.PUT, key, val);
+        byte [] byteMessage = SerializationUtils.serialize(dataSent);
         channel.basicPublish("", QUEUE_NAME, null, byteMessage);
-        System.out.println(" [x] Updating '" + msg.getKey() + "', '" + msg.getVal() + "'");
+        System.out.println(" [x] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
     }
 
-    public void handleSync(Msg msg){
+    public void handleSync(DataSent dataSent){
 
     }
 }

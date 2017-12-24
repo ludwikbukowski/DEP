@@ -6,6 +6,6 @@ import java.util.Set;
  */
 public interface Database {
     boolean put(String key, String value);
-    MyData get(String Key);
+    String get(String Key);
     boolean remove(String key);
 }

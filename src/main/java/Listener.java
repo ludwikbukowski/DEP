@@ -23,8 +23,8 @@ public class Listener {
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
                     throws IOException {
                 Object object =    SerializationUtils.deserialize(body);
-                Msg msg = (Msg) object;
-                manager.handleSync(msg);
+                DataSent dataSent = (DataSent) object;
+                manager.handleSync(dataSent);
             }
         };
         channel.basicConsume(QUEUE_NAME, true, consumer);
