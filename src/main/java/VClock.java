@@ -36,7 +36,7 @@ public class VClock implements Serializable{
             return false;
     }
     // not implementing Comparator<T> class due to exception.
-    // TODO handle compare conflits!
+    // TODO handle conflits!
     public int compareTo(VClock vc) throws VClockException{
         int res = 0;
         for(int i = 0;i < Main.NODES_NUMBER;i++){
@@ -48,7 +48,6 @@ public class VClock implements Serializable{
                 }else {
                     System.out.println("******************************");
                     System.out.println("[INTERNAL ERROR] Data conflict");
-                    System.out.println("Comparing " + get(i) +" vs " + vc.get(i));
                     System.out.println("******************************");
                     throw new VClockException();
                 }
@@ -60,7 +59,6 @@ public class VClock implements Serializable{
                 }else {
                     System.out.println("******************************");
                     System.out.println("[INTERNAL ERROR] Data conflict");
-                    System.out.println("Comparing " + get(i) +" vs " + vc.get(i));
                     System.out.println("******************************");
                     throw new VClockException();
                 }
