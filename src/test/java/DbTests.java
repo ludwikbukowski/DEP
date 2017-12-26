@@ -16,6 +16,7 @@ public class DbTests {
         mockedManager = Mockito.mock(SyncManager.class);
         db = new MyDB(mockedManager); // MyClass is tested
     }
+
     @Test
     public void dbPutGet() {
         // when

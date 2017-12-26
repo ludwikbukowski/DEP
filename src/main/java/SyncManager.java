@@ -88,12 +88,12 @@ public class SyncManager {
         channel.basicPublish("", destinationQueue, null, byteMessage);
     }
 
-    public void handleSync(Msg msg){
+    public void handleSync(Msg msg) throws VClockException {
         if(msg.getSender() == node){
          // Msg from myself, ignore
         }else {
             msg.log();
-            if(compare(msg.getVclock()) <= 0){
+            if(clock.compareTo(msg.getVclock()) <= 0){
 //                increment();
                 clock = mergeVClocks(msg.getVclock());
                 clock.log();
@@ -129,36 +129,7 @@ public class SyncManager {
         db.remove(data.getKey());
     }
 
-    public int compare(VClock vc){
-        int res = 0;
-        for(int i = 0;i < Main.NODES_NUMBER;i++){
-            if(clock.get(i) < vc.get(i)){
-                if(res == -1){
-                    // continue
-                }else if(res == 0){
-                    res = -1;
-                }else {
-                    System.out.println("******************************");
-                    System.out.println("[INTERNAL ERROR] Data conflict");
-                    System.out.println("Comparing " + clock.get(i) +" vs " + vc.get(i));
-                    System.out.println("******************************");
-                    break;
-                }
-            }else if(clock.get(i) > vc.get(i)){
-                if(res == 1){
-                    // continue
-                }else if(res == 0){
-                    res = 1;
-                }else {
-                    System.out.println("******************************");
-                    System.out.println("[INTERNAL ERROR] Data conflict");
-                    System.out.println("Comparing " + clock.get(i) +" vs " + vc.get(i));
-                    System.out.println("******************************");
-                }
-            }
-        }
-        return res;
-    }
+
 
     public VClock mergeVClocks(VClock vc){
         VClock merged = new VClock(Main.NODES_NUMBER);

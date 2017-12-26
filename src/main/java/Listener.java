@@ -50,7 +50,11 @@ public class Listener implements Runnable {
                         throws IOException {
                     Object object = SerializationUtils.deserialize(body);
                     Msg msg = (Msg) object;
-                    manager.handleSync(msg);
+                    try {
+                        manager.handleSync(msg);
+                    } catch (VClockException e) {
+                        e.printStackTrace();
+                    }
                 }
             };
             channel.basicConsume(queue, true, consumer);
