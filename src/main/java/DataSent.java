@@ -35,6 +35,10 @@ public class DataSent implements Serializable {
     public void setVal(String val) {
         this.val = val;
     }
+
+    public Operation getOperation() {
+        return operation;
+    }
 }
 
 

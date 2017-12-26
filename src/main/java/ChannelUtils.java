@@ -9,8 +9,12 @@ import java.util.concurrent.TimeoutException;
  * Created by ludwikbukowski on 25/12/17.
  */
 public class ChannelUtils {
-    public static String createQueueName(Integer a, Integer b){
-        return "node" + a + "+" + b;
+    public static String createReceivingQueueName(Integer a){
+        return "receive" + a;
     }
+
+//    public static String createSendingQueueName(Integer a, Integer b){
+//        return "receive" + a;
+//    }
 
 }

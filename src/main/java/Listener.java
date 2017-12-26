@@ -15,7 +15,7 @@ public class Listener implements Runnable {
     private int node;
     private static Connection connection;
     private static Channel channel;
-    private static HashSet<String> queues;
+    private static String queue;
 
     Listener(VClock vc, Connection conn, SyncManager sm, MyDB db, int n){
         this.clock = vc;
@@ -27,22 +27,15 @@ public class Listener implements Runnable {
 
 
     public void start() throws IOException, TimeoutException {
-        queues = new HashSet<String>();
         channel = connection.createChannel();
         startRecivingQueues();
     }
 
     public void startRecivingQueues() throws IOException, TimeoutException {
-        Integer count = Main.NODES_NUMBER;
-        for(int i=0;i<count;i++){
-            if(i!=node){
-                String name = ChannelUtils.createQueueName(i, node);
-                queues.add(name);
-                channel.queueDeclare(name, false, false, false, null);
-                System.out.println("Creating receiving queue " + name);
-            }
+                queue = ChannelUtils.createReceivingQueueName(node);
+                channel.queueDeclare(queue, false, false, false, null);
+                System.out.println("Creating receiving queue " + queue);
         }
-    }
 
     public void stop() throws IOException, TimeoutException {
         channel.close();
@@ -51,7 +44,6 @@ public class Listener implements Runnable {
 
     public static void listen() throws Exception {
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
-        for(String q : queues) {
             Consumer consumer = new DefaultConsumer(channel) {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
@@ -61,8 +53,7 @@ public class Listener implements Runnable {
                     manager.handleSync(msg);
                 }
             };
-            channel.basicConsume(q, true, consumer);
-        }
+            channel.basicConsume(queue, true, consumer);
     }
 
     public void run() {

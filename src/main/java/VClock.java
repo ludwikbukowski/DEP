@@ -1,37 +1,38 @@
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
 
-/**
- * Created by ludwikbukowski on 24/12/17.
- */
-public class VClock implements Serializable {
-    public HashMap<String, Integer> clocks = new HashMap<String, Integer>();
+public class VClock implements Serializable{
+    public Integer [] clocks = new Integer[Main.NODES_NUMBER];
 
+    public void log(){
+        System.out.print("[VClock]: [");
+        for(int i =0;i<Main.NODES_NUMBER;i++)
+            System.out.print(clocks[i] + ";");
+        System.out.println("]");
+    }
     VClock(Integer nodes){
         for(int i=0; i< nodes; i++){
-            clocks.put("node"+i, 0);
+            clocks[i] = 0;
         }
     }
-    public boolean update(String node){
-        if(clocks.get(node) != null) {
-            clocks.put(node, clocks.get(node) + 1);
+    synchronized public boolean update(int index){
+        if(clocks[index] != null) {
+            clocks[index] = clocks[index] + 1;
             return true;
         }
         else
             return false;
     }
 
-    public boolean addNew(Integer index){
-        String key = "node"+index;
-        if(clocks.get(key) == null){
-            clocks.put(key, 0);
-            return true;
-        }else
-            return false;
+    public Integer get(int index){
+        return clocks[index];
     }
 
-    public void update(Integer index){
-        update("node"+index);
+    synchronized public boolean set(int index, int value){
+        if(clocks[index] != null) {
+            clocks[index] = value;
+            return true;
+        }
+        else
+            return false;
     }
 }

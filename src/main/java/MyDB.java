@@ -11,20 +11,20 @@ public class MyDB implements Database {
         this.manager = manager;
     }
 
-    public boolean put(String key, String value) {
+    public synchronized boolean put(String key, String value) {
         database.put(key, value);
-
-        // Sync with the rest of the nodes
         return true;
     }
 
-    public String get(String key) {
+    public synchronized String get(String key) {
         return database.get(key);
     }
 
     public boolean remove(String key) {
         database.remove(key);
-        // Sync with the rest of the nodes
         return true;
+    }
+    synchronized public HashMap<String, String> getDb(){
+        return database;
     }
 }
