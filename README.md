@@ -37,3 +37,8 @@ Below simple diagram explaining connections between nodes and their RabbitMQ que
 
 Each node is consumer of his own RabbitMQ queue.
 When node wants to notify other nodes about some update, it puts messages to other nodes' queues.
+
+
+Every message sent between nodes are objects of [Msg class](https://github.com/ludwikbukowski/DEP/blob/master/src/main/java/Msg.java). It contains sender and receivers ids (optional), data(key, value, operation type) and [vectorClock object](https://github.com/ludwikbukowski/DEP/blob/master/src/main/java/VClock.java)
+
+
