@@ -8,7 +8,7 @@ Recommended docker container:
 $ docker run -d -p 5672:5672 -p 15672:15672  --name rabbitmq rabbitmq
 ```
 ## Run
-Run java node with one integer argument which points out the id of the node.
+Run java node with `Main` as a main class with one integer argument which points out the id of the node.
 In console you should see prompt request for a command:
 ```
 Creating sending queue receive0
