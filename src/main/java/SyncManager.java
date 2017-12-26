@@ -39,7 +39,7 @@ public class SyncManager {
                 String name = ChannelUtils.createReceivingQueueName(i);
                 channel.queueDeclare(name, false, false, false, null);
                 queues.add(name);
-                System.out.println("Creating sending queue " + name);
+//                System.out.println("Creating sending queue " + name);
             }
         }
     }
@@ -55,11 +55,10 @@ public class SyncManager {
         msg.setSender(node);
         msg.log();
         for(String q : queues){
-            System.out.println("sending msg to " + q);
             send(msg, q);
         }
         db.put(key, val);
-        System.out.println(" [x] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
+        System.out.println("[LOG] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
     }
     public void syncRemove(String key) throws IOException {
         DataSent dataSent = new DataSent(Operation.REMOVE, key, "");
@@ -67,11 +66,10 @@ public class SyncManager {
         msg.setSender(node);
         msg.log();
         for(String q : queues){
-            System.out.println("sending msg to " + q);
             send(msg, q);
         }
         db.remove(key);
-        System.out.println(" [x] Removing '" + dataSent.getKey() + "'");
+        System.out.println("[LOG] Removing '" + dataSent.getKey() + "'");
     }
 ///////  Dirty calls
     public String dirtyRead(String key){
@@ -96,7 +94,6 @@ public class SyncManager {
             if(clock.compareTo(msg.getVclock()) <= 0){
 //                increment();
                 clock = mergeVClocks(msg.getVclock());
-                clock.log();
                 processMsg(msg);
             }else{
                 System.out.println("************************************");
