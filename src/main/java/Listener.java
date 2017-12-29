@@ -11,13 +11,13 @@ public class Listener implements Runnable {
     private final static String QUEUE_NAME = "dbchannel";
     private static VClock clock;
     private static SyncManager manager;
-    private static MyDB mydb;
+    private static Database mydb;
     private int node;
     private static Connection connection;
     private static Channel channel;
     private static String queue;
 
-    Listener(VClock vc, Connection conn, SyncManager sm, MyDB db, int n){
+    Listener(VClock vc, Connection conn, SyncManager sm, Database db, int n){
         this.clock = vc;
         this.connection = conn;
         this.manager = sm;
@@ -50,6 +50,7 @@ public class Listener implements Runnable {
                         throws IOException {
                     Object object = SerializationUtils.deserialize(body);
                     Msg msg = (Msg) object;
+                    System.out.println("Received msg " + msg.getData().getKey());
                     try {
                         manager.handleSync(msg);
                     } catch (VClockException e) {

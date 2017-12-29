@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -8,4 +9,5 @@ public interface Database {
     boolean put(String key, String value);
     String get(String Key);
     boolean remove(String key);
+    HashMap<String, String> getDb();
 }

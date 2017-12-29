@@ -5,6 +5,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 
@@ -12,13 +13,15 @@ public class SyncManager {
     private Connection connection;
     private Channel channel;
     private HashSet<String> queues ;
+    private DiskStorageManager storeManager;
     VClock clock;
-    private MyDB db;
+    private Database db;
     private int node;
 
-    SyncManager(VClock clock, MyDB mydb){
+    SyncManager(VClock clock, Database mydb, DiskStorageManager manager){
         this.clock = clock;
         this.db = mydb;
+        this.storeManager = manager;
     }
 
     public VClock increment(){
@@ -48,12 +51,19 @@ public class SyncManager {
         channel.close();
         connection.close();
     }
+
+    public void loadFromList(List<Msg> list) {
+        for(Msg m : list){
+            processMsg(m);
+        }
+    }
 ///////  Synchronised calls
     public void syncPut(String key, String val) throws IOException {
         DataSent dataSent = new DataSent(Operation.PUT, key, val);
         Msg msg = new Msg(increment(), dataSent);
         msg.setSender(node);
         msg.log();
+        storeManager.write(msg);
         for(String q : queues){
             send(msg, q);
         }
@@ -89,6 +99,7 @@ public class SyncManager {
     public void handleSync(Msg msg) throws VClockException {
         if(msg.getSender() == node){
          // Msg from myself, ignore
+            System.out.println("ERROR - msg from myself");
         }else {
             msg.log();
             if(clock.compareTo(msg.getVclock()) <= 0){
