@@ -33,6 +33,7 @@ public class Main {
         manager.setNode(node);
         manager.setConnection(connection);
         manager.start();
+        disk.setNode(node);
         List<Msg> list = disk.read(node);
         manager.loadFromList(list);
         System.out.println("Starting node " + node);
@@ -45,7 +46,7 @@ public class Main {
             parseCommand(input);
         }
     }
-    static void parseCommand(String input) throws IOException {
+    static void parseCommand(String input) throws IOException, TimeoutException {
         String [] args = input.split("\\s+");
         if(args[0].equals("add") && args.length == 3){
             String key = args[1];
@@ -68,6 +69,9 @@ public class Main {
             String key = args[1];
             String val = manager.dirtyRead(key);
             System.out.println("Value for " + key + " is " + val);
+        }else if(args[0].equals("stop")){
+            manager.stop();
+            System.out.println("Stopping...");
         }
     }
 

@@ -51,4 +51,14 @@ public class Msg implements Serializable {
     public void setReceiver(int receiver) {
         this.receiver = receiver;
     }
+
+    public boolean equals(Msg msg2) throws VClockException {
+        if(getVclock().compareTo(msg2.getVclock()) != 0)
+            return false;
+        if(getData().equals(msg2.getData())){
+            if(getSender() == msg2.getSender() && getReceiver() == msg2.getReceiver())
+                return true;
+        }
+        return false;
+    }
 }

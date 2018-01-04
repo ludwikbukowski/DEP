@@ -19,7 +19,7 @@ public class Listener implements Runnable {
 
     Listener(VClock vc, Connection conn, SyncManager sm, Database db, int n){
         this.clock = vc;
-        this.connection = conn;
+        this.connection     = conn;
         this.manager = sm;
         this.mydb = db;
         this.node = n;
@@ -48,6 +48,7 @@ public class Listener implements Runnable {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
                         throws IOException {
+                    System.out.println("Received...");
                     Object object = SerializationUtils.deserialize(body);
                     Msg msg = (Msg) object;
                     System.out.println("Received msg " + msg.getData().getKey());

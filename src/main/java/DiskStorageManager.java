@@ -12,11 +12,14 @@ public class DiskStorageManager {
     private  FileInputStream streamIn =  null;
     private  ArrayList<Msg> archive = new ArrayList<Msg>();
     private String node;
-    private   String createFileName(Integer Id){
+    private String createFileName(Integer Id){
         return "./node" + Id + ".backup";
     }
 
 
+    public void setNode(int node){
+        this.node = createFileName(node);
+    }
     public void write(Msg msg) throws IOException {
         fout = new FileOutputStream(node, false);
         oos = new ObjectOutputStream(fout);
@@ -26,6 +29,21 @@ public class DiskStorageManager {
         oos.close();
         fout.close();
     }
+
+    public void clear() throws IOException {
+        fout = new FileOutputStream(node, false);
+        oos = new ObjectOutputStream(fout);
+        oos.close();
+        fout.close();
+    }
+
+    public boolean isEmpty(Integer Id) throws IOException {
+        node = createFileName(Id);
+        streamIn = new FileInputStream(createFileName(Id));
+        objectinputstream = new ObjectInputStream(streamIn);
+        return !(objectinputstream.available() > 0);
+    }
+
     public List<Msg> read(Integer Id)  {
         node = createFileName(Id);
         try {

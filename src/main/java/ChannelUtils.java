@@ -10,7 +10,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class ChannelUtils {
     public static String createReceivingQueueName(Integer a){
-        return "receive" + a;
+        return "receivequeue" + a;
     }
 
 //    public static String createSendingQueueName(Integer a, Integer b){

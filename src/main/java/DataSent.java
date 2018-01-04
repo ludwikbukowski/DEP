@@ -20,6 +20,14 @@ public class DataSent implements Serializable {
         this.val = "";
     }
 
+    public boolean equals(DataSent dt) throws VClockException{
+        if(key.equals(dt.getKey()) && val.equals(dt.getVal())){
+            if(operation.equals(dt.getOperation()))
+                return true;
+        }
+        return false;
+    }
+
     public String getKey() {
         return key;
     }
