@@ -52,9 +52,10 @@ public class SyncManager {
         connection.close();
     }
 
-    public void loadFromList(List<Msg> list) {
+    public void loadFromList(List<Msg> list) throws IOException {
         for(Msg m : list){
             processMsg(m);
+            clock = m.getVclock();
         }
     }
 ///////  Synchronised calls
@@ -75,6 +76,7 @@ public class SyncManager {
         Msg msg = new Msg(increment(), dataSent);
         msg.setSender(node);
         msg.log();
+        storeManager.write(msg);
         for(String q : queues){
             send(msg, q);
         }
@@ -96,7 +98,7 @@ public class SyncManager {
         channel.basicPublish("", destinationQueue, null, byteMessage);
     }
 
-    public void handleSync(Msg msg) throws VClockException {
+    public void handleSync(Msg msg) throws VClockException, IOException {
         if(msg.getSender() == node){
          // Msg from myself, ignore
             System.out.println("ERROR - msg from myself");
@@ -104,8 +106,10 @@ public class SyncManager {
             msg.log();
             if(clock.compareTo(msg.getVclock()) <= 0){
 //                increment();
+                System.out.println("Compared...");
                 clock = mergeVClocks(msg.getVclock());
                 processMsg(msg);
+                storeManager.write(msg);
             }else{
                 System.out.println("************************************");
                 System.out.println("Discarding update - old vector clock");
@@ -115,11 +119,11 @@ public class SyncManager {
     }
 
     private void processMsg(Msg msg){
-     switch(msg.getData().getOperation()){
+     switch(msg.getData().getOperation()) {
          case PUT:
              handlePut(msg.getData());
          case READ:
-            // handleRead(msg);
+             // handleRead(msg);
              break;
          case REMOVE:
              handleRemove(msg.getData());
@@ -140,6 +144,7 @@ public class SyncManager {
 
 
     public VClock mergeVClocks(VClock vc){
+
         VClock merged = new VClock(Main.NODES_NUMBER);
         for(int i = 0;i< Main.NODES_NUMBER;i++){
             int a = clock.get(i);
@@ -147,6 +152,8 @@ public class SyncManager {
             int max = (a <= b)? b : a;
             merged.set(i, max);
         }
+        System.out.println("Merging " + clock.logString() + " with " +
+                vc.logString() + " = " + merged.logString());
         return merged;
     }
 

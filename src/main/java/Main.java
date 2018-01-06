@@ -2,6 +2,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,8 +36,15 @@ public class Main {
         manager.setConnection(connection);
         manager.start();
         disk.setNode(node);
-        List<Msg> list = disk.read(node);
-        manager.loadFromList(list);
+        try {
+            System.out.println("Loading data from local storage...");
+            List<Msg> list = disk.read(node);
+            manager.loadFromList(list);
+        }catch(EOFException e){
+            // No storage to read
+        }catch(FileNotFoundException e2){
+            // no storage to read
+        }
         System.out.println("Starting node " + node);
         // Start listening on specific channels
         new Listener(clock, connection, manager, mydb, node).run();
@@ -72,6 +81,11 @@ public class Main {
         }else if(args[0].equals("stop")){
             manager.stop();
             System.out.println("Stopping...");
+        }else if(args[0].equals("clear")){
+            disk.clear();
+            mydb.clear();
+            clock = new VClock(NODES_NUMBER);
+            System.out.println("Clearing disk storage and RAM storage locally...");
         }
     }
 

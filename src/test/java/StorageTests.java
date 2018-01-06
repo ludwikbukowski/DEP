@@ -40,7 +40,7 @@ public class StorageTests {
         assertEquals("when I put I need to get!", true, list.get(1).equals(msg2));
     }
 
-    @Test
+    @Test(expected = EOFException.class)
     public void clearTest() throws IOException, VClockException {
         // when
         VClock clock = new VClock(3);
@@ -55,7 +55,7 @@ public class StorageTests {
         List<Msg> list = storage.read(testInt);
         assertEquals("its not empty", false, list.isEmpty());
         storage.clear();
-        assertEquals("its empty now", true,  storage.isEmpty(testInt));
+        List<Msg> list2 = storage.read(testInt);
     }
     @Test
     public void advancedReadWrite() throws IOException, VClockException {

@@ -24,6 +24,12 @@ public class MyDB implements Database {
         database.remove(key);
         return true;
     }
+
+    public boolean clear() {
+        database.clear();
+        return true;
+    }
+
     synchronized public HashMap<String, String> getDb(){
         return database;
     }

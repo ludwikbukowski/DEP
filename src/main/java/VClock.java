@@ -4,10 +4,15 @@ public class VClock implements Serializable{
     public Integer [] clocks = new Integer[Main.NODES_NUMBER];
 
     public void log(){
-        System.out.print("[VClock]: [");
+        System.out.println(logString());
+    }
+    public String logString(){
+        StringBuilder b = new StringBuilder();
+        b.append("[VClock]: [");
         for(int i =0;i<Main.NODES_NUMBER;i++)
-            System.out.print(clocks[i] + ";");
-        System.out.println("]");
+            b.append(clocks[i] + ";");
+        b.append("]");
+        return b.toString();
     }
     VClock(Integer nodes){
         for(int i=0; i< nodes; i++){
@@ -48,6 +53,7 @@ public class VClock implements Serializable{
                 }else {
                     System.out.println("******************************");
                     System.out.println("[INTERNAL ERROR] Data conflict");
+                    System.out.println("[COMPARING] " + logString() + " with " + vc.logString());
                     System.out.println("******************************");
                     throw new VClockException();
                 }
@@ -58,7 +64,8 @@ public class VClock implements Serializable{
                     res = 1;
                 }else {
                     System.out.println("******************************");
-                    System.out.println("[INTERNAL ERROR] Data conflict");
+                    System.out.println("[INTERNAL ERROR] Data conflict.");
+                    System.out.println("[COMPARING] " + logString() + " with " + vc.logString());
                     System.out.println("******************************");
                     throw new VClockException();
                 }

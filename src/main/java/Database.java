@@ -9,5 +9,6 @@ public interface Database {
     boolean put(String key, String value);
     String get(String Key);
     boolean remove(String key);
+    boolean clear();
     HashMap<String, String> getDb();
 }
