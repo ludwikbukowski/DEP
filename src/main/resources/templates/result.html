@@ -23,10 +23,20 @@
         <p th:text="${url.result}"/>
     </a>
     </font>
-    <a href="/url" class="btn btn-info btn-lg">
-        <span class="glyphicon glyphicon-pencil"></span> New
-    </a>
+    <form action="#" th:action="@{/url}" th:object="${url}" method="post">
+        <div style ="font: 30">
+            <p>URL: <input type="text" style=" width: 70%" th:field="*{content}" /></p>
+        </div>
+        <p>
+            <input type="submit" value="Submit" class="btn btn-info btn-lg"/>
+        </p>
+    </form>
     </p>
+    <button onClick="window.location.reload()" class="btn btn-primary">
+        <span class="glyphicon glyphicon-refresh">
+
+        </span> Refresh</button>
+
 
 
     <div layout:fragment="content">
