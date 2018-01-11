@@ -28,6 +28,11 @@ Starting node 1
                  (...)
 ```
 Then visit `http://localhost:8080/url`. You should see the URL shortener main page.
+It should look like this:
+
+![alt text](https://github.com/ludwikbukowski/DEP/blob/master/result.png)
+
+
 In order to run another node, please change the port in `./src/main/resources/application.properties` and run node with different node id (up to 3). E.g
 ```
 $ mvn -q spring-boot:run -Drun.arguments="2"
