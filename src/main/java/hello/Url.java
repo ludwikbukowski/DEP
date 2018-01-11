@@ -4,6 +4,7 @@ public class Url {
 
     private String content;
     private String result;
+    private String fullcontent;
 
     public String getContent() {
         return content;
@@ -21,4 +22,11 @@ public class Url {
         this.result = res;
     }
 
+    public String getFullcontent() {
+        return fullcontent;
+    }
+
+    public void setFullcontent(String fullContent) {
+        this.fullcontent = fullContent;
+    }
 }

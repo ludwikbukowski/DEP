@@ -1,17 +1,58 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head> 
-    <title>Getting Started: Handling Form Submission</title>
+    <title>URL shortener</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <body>
+<div style="padding:20px">
+
 	<h1>Result</h1>
-    <p th:text="'content: ' + ${url.content}" />
+    <font size="3">
+    <p  th:text="'URL: ' + ${url.content}" />
+    </font>
+
     <p> Short url:
+     <font size="5">
     <a th:href = "@{${url.result}}">
         <p th:text="${url.result}"/>
     </a>
-    <a href="/url">Submit another link</a>
+    </font>
+    <a href="/url" class="btn btn-info btn-lg">
+        <span class="glyphicon glyphicon-pencil"></span> New
+    </a>
     </p>
+
+
+    <div layout:fragment="content">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <td>Short URL</td>
+                <td>Native URL</td>
+                <td>Remove</td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${list.empty}">
+                <td colspan="4">No urls</td>
+            </tr>
+            <tr th:each="el : ${list}">
+                <td><a th:href = "@{${el.fullcontent}}"><p th:text="${el.fullcontent}"/></a></td>
+                <td><a th:href = "@{${el.result}}"><p th:text="${el.result}"/></a></td>
+                <td><p>
+                    <a th:href="@{/delete(url=${el.content})}" class="btn btn-danger">Delete</a>
+                </p>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    </div>
 </body>
 </html>

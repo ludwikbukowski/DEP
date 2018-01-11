@@ -13,7 +13,7 @@ apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 
 jar {
-    baseName = 'gs-handling-form-submission'
+    baseName = 'dep'
     version =  '0.1.0'
 }
 
@@ -29,6 +29,7 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
     compile "io.projectreactor.rabbitmq:reactor-rabbitmq:1.0.0.M1"
     compile("org.springframework.boot:spring-boot-starter-thymeleaf")
+    compile group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '1.2.9'
     testCompile("org.springframework.boot:spring-boot-starter-test")
 }
 

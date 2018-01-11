@@ -63,6 +63,7 @@ public class Main {
 //            String input = scanner.nextLine();
 //            parseCommand(input);
 //        }
+
         return manager;
     }
     static void parseCommand(String input) throws IOException, TimeoutException {
