@@ -3,33 +3,36 @@ Distributed enabling platform project
 # Project from Distributed Enabling platforms - URL Shortener with distributed database.
 ## [WORK IN PROGRESS]
 ## Prepare
-Project is written in Java and use maven for dependency management.
+Project is written in Java and use gradle and maven for dependency management.
+The MVC pattern realised thanks to Spring framework.
 You need RabbitMQ running on your localhost machine.
 Recommended docker container:
 ```
 $ docker run -d -p 5672:5672 -p 15672:15672  --name rabbitmq rabbitmq
 ```
 ## Run
-Run java node with `Main` as a main class with one integer argument which points out the id of the node.
-In console you should see prompt request for a command:
+Use maven to run spring project. Set argument as node id.
 ```
-Creating sending queue receive0
-Creating sending queue receive1
-Starting node 2
-Creating receiving queue receive2
- [*] Waiting for messages. To exit press CTRL+C
-Run command...
-$
+$ mvn -q spring-boot:run -Drun.arguments="1"
+Loading data from local storage...
+Starting node 1
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::        (v1.5.9.RELEASE)
+ 
+                 (...)
 ```
-Possible commands:
-* add KEY VALUE - adds key value pair to database
-* get KEY - reads value for specified key. If no record found, null returned
-* remove KEY - removes key-value pair from the db  
-* list - lists all keys and corresponding values from the db
-
-`add` and `remove` commands are synchronised - the update is broadcasted to the other nodes.
-`get` and `list` are reads just from local memory (not synchronised with other nodes)
-
+Then visit `http://localhost:8080/url`. You should see the URL shortener main page.
+In order to run another node, please change the port in `./src/main/resources/application.properties` and run node with different node id (up to 3). E.g
+```
+$ mvn -q spring-boot:run -Drun.arguments="2"
+$ ...
+```
 ## Architecture
 Below simple diagram explaining connections between nodes and their RabbitMQ queues:
 
