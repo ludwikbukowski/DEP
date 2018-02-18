@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,8 @@ public class Main {
     private static Connection connection;
     public final static Integer NODES_NUMBER = 3;
     private static DiskStorageManager disk = new DiskStorageManager();
+
+    public static int node = -1;
 
     @Value("${rabbit.host}")
     private static String rabbitHost;
@@ -39,7 +42,7 @@ public class Main {
     }
 
     public static SyncManager run(String[] args) throws IOException, TimeoutException {
-        int node = Integer.parseInt(args[0]);
+        node = Integer.parseInt(args[0]);
         start();
         manager.setNode(node);
         manager.setConnection(connection);
@@ -56,15 +59,17 @@ public class Main {
         }
         System.out.println("Starting node " + node);
         // Start listening on specific channels
-        new Listener(clock, connection, manager, mydb, node).run();
-//        while(true) {
-//            System.out.println("Run command...");
-//            Scanner scanner = new Scanner(System.in);
-//            String input = scanner.nextLine();
-//            parseCommand(input);
-//        }
+//        new Listener(clock, connection, manager, mydb, node).run();
 
-        return manager;
+
+        while(true) {
+            System.out.println("Run command...");
+            Scanner scanner = new Scanner(System.in);
+            String input = scanner.nextLine();
+            parseCommand(input);
+        }
+
+//        return manager;
     }
     static void parseCommand(String input) throws IOException, TimeoutException {
         String [] args = input.split("\\s+");

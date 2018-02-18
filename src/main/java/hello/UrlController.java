@@ -67,7 +67,12 @@ public class UrlController {
     @RequestMapping("/short")
     public RedirectView redirectPage(@RequestParam(value="x", defaultValue="nohash") String hash) {
         // Get the url based on "hash" element
-        String suffix = Application.manager.dirtyRead(hash);
+        String suffix = null;
+        try {
+            suffix = Application.manager.dirtyRead(hash);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         RedirectView redirectView = new RedirectView();
         redirectView.setUrl(suffix);
         return redirectView;

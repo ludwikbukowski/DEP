@@ -1,7 +1,6 @@
 package hello;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.*;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.IOException;
@@ -66,11 +65,15 @@ public class SyncManager {
         Msg msg = new Msg(increment(), dataSent);
         msg.setSender(node);
         msg.log();
-        storeManager.write(msg);
-        for(String q : queues){
-            send(msg, q);
+        int distnode = ConsistentHashingUtils.getNode(key);
+        // if its local node, just write locally
+        if(distnode == node) {
+            storeManager.write(msg);
+            db.put(key, val);
+        }else{
+            String n = ChannelUtils.createReceivingQueueName(distnode);
+            send(msg, n);
         }
-        db.put(key, val);
         System.out.println("[LOG] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
     }
     public void syncRemove(String key) throws IOException {
@@ -78,16 +81,37 @@ public class SyncManager {
         Msg msg = new Msg(increment(), dataSent);
         msg.setSender(node);
         msg.log();
-        storeManager.write(msg);
-        for(String q : queues){
-            send(msg, q);
+        int distnode = ConsistentHashingUtils.getNode(key);
+        if(distnode == node){
+            storeManager.write(msg);
+            db.remove(key);
+        }else{
+            String n = ChannelUtils.createReceivingQueueName(distnode);
+            send(msg, n);
         }
-        db.remove(key);
         System.out.println("[LOG] Removing '" + dataSent.getKey() + "'");
     }
 ///////  Dirty calls
-    public String dirtyRead(String key){
+    public String dirtyRead(String key) throws IOException {
+        int distnode = ConsistentHashingUtils.getNode(key);
+        if(distnode == node)
         return db.get(key);
+        else {
+            DataSent dataSent = new DataSent(Operation.READ, key, "");
+            Msg msg = new Msg(increment(), dataSent);
+            msg.setSender(node);
+            String n = ChannelUtils.createReceivingQueueName(distnode);
+            send(msg, n);
+            return waitForResponse(msg);
+        }
+    }
+
+    private String waitForResponse(Msg msg) throws IOException {
+        String queue = ChannelUtils.createReceivingQueueName(node);
+        DataSent res;
+        Consumer consumer = new QueueingConsumer(channel);
+        channel.basicConsume(queue,true,consumer);
+        return "res";
     }
 
     public HashMap<String, String> dirtyList(){
@@ -125,7 +149,7 @@ public class SyncManager {
          case PUT:
              handlePut(msg.getData());
          case READ:
-             // handleRead(msg);
+//              handleRead(msg);
              break;
          case REMOVE:
              handleRemove(msg.getData());
