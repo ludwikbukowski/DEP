@@ -59,7 +59,7 @@ public class Main {
         }
         System.out.println("Starting node " + node);
         // Start listening on specific channels
-//        new Listener(clock, connection, manager, mydb, node).run();
+        new Listener(clock, connection, manager, mydb, node).run();
 
 
         while(true) {
@@ -92,7 +92,12 @@ public class Main {
             }
         }else if(args[0].equals("get") && args.length == 2){
             String key = args[1];
-            String val = manager.dirtyRead(key);
+            String val = null;
+            try {
+                val = manager.syncRead(key);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             System.out.println("Value for " + key + " is " + val);
         }else if(args[0].equals("stop")){
             manager.stop();

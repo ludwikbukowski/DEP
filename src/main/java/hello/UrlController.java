@@ -65,11 +65,11 @@ public class UrlController {
     }
 
     @RequestMapping("/short")
-    public RedirectView redirectPage(@RequestParam(value="x", defaultValue="nohash") String hash) {
+    public RedirectView redirectPage(@RequestParam(value="x", defaultValue="nohash") String hash) throws InterruptedException {
         // Get the url based on "hash" element
         String suffix = null;
         try {
-            suffix = Application.manager.dirtyRead(hash);
+            suffix = Application.manager.syncRead(hash);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -34,6 +34,7 @@ public class Listener implements Runnable {
     public void startRecivingQueues() throws IOException, TimeoutException {
                 queue = ChannelUtils.createReceivingQueueName(node);
                 channel.queueDeclare(queue, false, false, false, null);
+                channel.queueDeclare(queue+"res", false, false, false, null);
 //                System.out.println("Creating receiving queue " + queue);
         }
 
@@ -46,7 +47,8 @@ public class Listener implements Runnable {
 //        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
             Consumer consumer = new DefaultConsumer(channel) {
                 @Override
-                public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+                public void handleDelivery(String consumerTag, Envelope envelope,
+                                           AMQP.BasicProperties properties, byte[] body)
                         throws IOException {
                     System.out.println("Received...");
                     Object object = SerializationUtils.deserialize(body);

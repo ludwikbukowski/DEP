@@ -49,6 +49,7 @@ public class DataSent implements Serializable {
     public Operation getOperation() {
         return operation;
     }
+    public void setOperation(Operation o) {this.operation = o;}
 }
 
 
