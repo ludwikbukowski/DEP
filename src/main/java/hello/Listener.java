@@ -34,7 +34,6 @@ public class Listener implements Runnable {
     public void startRecivingQueues() throws IOException, TimeoutException {
                 queue = ChannelUtils.createReceivingQueueName(node);
                 channel.queueDeclare(queue, false, false, false, null);
-                channel.queueDeclare(queue+"res", false, false, false, null);
 //                System.out.println("Creating receiving queue " + queue);
         }
 
@@ -50,10 +49,10 @@ public class Listener implements Runnable {
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body)
                         throws IOException {
-                    System.out.println("Received...");
+//                    System.out.println("Received...");
                     Object object = SerializationUtils.deserialize(body);
                     Msg msg = (Msg) object;
-                    System.out.println("Received msg " + msg.getData().getKey());
+//                    System.out.println("Received msg " + msg.getData().getKey());
                     try {
                         manager.handleSync(msg);
                     } catch (VClockException e) {

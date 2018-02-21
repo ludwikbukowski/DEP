@@ -14,10 +14,10 @@ public class ConsistentHashingUtils {
     public static Integer getNode(String key) {
         Integer code = abs(key.hashCode());
         Integer range = keyDomain / Main.NODES_NUMBER;
-        System.out.println("range is " + range + " and code " + code);
-        int part = 1;
+//        System.out.println("range is " + range + " and code " + code);
+        int part = 0;
         while(code > part * range){part++;}
-        return part;
+        return part % (Main.NODES_NUMBER-1);
     }
 
     private static Integer abs(int i) {

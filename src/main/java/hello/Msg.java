@@ -30,8 +30,8 @@ public class Msg implements Serializable {
 
     // For development use only
 
-    void log(){
-        System.out.print("[LOG] db.VClock: [");
+    void log(String prefix){
+        System.out.print(prefix+":"+"[LOG] db.VClock: [");
         for(int i =0;i< Main.NODES_NUMBER; i++){
             System.out.print(clock.clocks[i] + ";");
         }

@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 
@@ -23,6 +25,7 @@ public class Main {
     private static Connection connection;
     public final static Integer NODES_NUMBER = 3;
     private static DiskStorageManager disk = new DiskStorageManager();
+    private static BlockingQueue readingqueue = new ArrayBlockingQueue<Msg>(1);
 
     public static int node = -1;
 
@@ -46,30 +49,31 @@ public class Main {
         start();
         manager.setNode(node);
         manager.setConnection(connection);
+        manager.setReadingqueue(readingqueue);
         manager.start();
         disk.setNode(node);
-        try {
-            System.out.println("Loading data from local storage...");
-            List<Msg> list = disk.read(node);
-            manager.loadFromList(list);
-        }catch(EOFException e){
-            // No storage to read
-        }catch(FileNotFoundException e2){
-            // no storage to read
-        }
+//        try {
+//            System.out.println("Loading data from local storage...");
+////            List<Msg> list = disk.read(node);
+////            manager.loadFromList(list);
+//        }catch(EOFException e){
+//            // No storage to read
+//        }catch(FileNotFoundException e2){
+//            // no storage to read
+//        }
         System.out.println("Starting node " + node);
         // Start listening on specific channels
         new Listener(clock, connection, manager, mydb, node).run();
 
 
-        while(true) {
-            System.out.println("Run command...");
-            Scanner scanner = new Scanner(System.in);
-            String input = scanner.nextLine();
-            parseCommand(input);
-        }
+//        while(true) {
+//            System.out.println("Run command...");
+//            Scanner scanner = new Scanner(System.in);
+//            String input = scanner.nextLine();
+//            parseCommand(input);
+//        }
 
-//        return manager;
+        return manager;
     }
     static void parseCommand(String input) throws IOException, TimeoutException {
         String [] args = input.split("\\s+");
