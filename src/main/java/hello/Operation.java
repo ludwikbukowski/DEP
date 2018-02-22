@@ -1,5 +1,5 @@
 package hello;
 
 public enum Operation {
-    PUT, READ, REMOVE, INCR, READRES, NONE;
+    PUT, READ, REMOVE, INCRPUT, INCRREM, READRES, READALL, NONE;
 }

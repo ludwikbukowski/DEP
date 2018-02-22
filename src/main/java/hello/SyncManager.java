@@ -4,9 +4,7 @@ import com.rabbitmq.client.*;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -21,6 +19,7 @@ public class SyncManager {
     private BlockingQueue<Msg> readingqueue;
     private Database db;
     private int node;
+    private int totalcount = 0;
 
     SyncManager(VClock clock, Database mydb, DiskStorageManager manager){
         this.clock = clock;
@@ -73,7 +72,7 @@ public class SyncManager {
         int distnode = ConsistentHashingUtils.getNode(key);
         // if its local node, just write locally
         if(distnode == node) {
-            dataSent.setOperation(Operation.INCR);
+            dataSent.setOperation(Operation.INCRPUT);
             msg.setData(dataSent);
             msg.log("Local putting");
             for(String q : queues){
@@ -84,17 +83,19 @@ public class SyncManager {
         }else{
             msg.log("Distributed putting");
             String n = ChannelUtils.createReceivingQueueName(distnode);
-            notifyAllIncr(n);
+            notifyAllIncr(n, Operation.INCRPUT);
             send(msg, n);
         }
+        totalcount++;
 //        System.out.println("[LOG] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
     }
 
-    private void notifyAllIncr(String except){
-        DataSent dataSent = new DataSent(Operation.INCR, "", "");
+    private void notifyAllIncr(String except, Operation op){
+        DataSent dataSent = new DataSent(op, "", "");
         Msg msg = new Msg(clock, dataSent);
         msg.setSender(node);
         HashSet<String> queues2 = new HashSet<String>(queues);
+        queues2.remove(except);
         for(String q : queues2){
             try {
                 send(msg, q);
@@ -110,7 +111,7 @@ public class SyncManager {
         msg.setSender(node);
         int distnode = ConsistentHashingUtils.getNode(key);
         if(distnode == node){
-            dataSent.setOperation(Operation.INCR);
+            dataSent.setOperation(Operation.INCRREM);
             msg.setData(dataSent);
             msg.log("Local remove");
             for(String q : queues){
@@ -121,9 +122,10 @@ public class SyncManager {
         }else{
             msg.log("Distributed remove");
             String n = ChannelUtils.createReceivingQueueName(distnode);
-            notifyAllIncr(n);
+            notifyAllIncr(n, Operation.INCRREM);
             send(msg, n);
         }
+        totalcount--;
 //        System.out.println("[LOG] Removing '" + dataSent.getKey() + "'");
     }
 ///////  Dirty calls
@@ -153,8 +155,39 @@ public class SyncManager {
         return res.getData().getVal();
     }
 
+    private HashMap<String, String> waitForResponses(Msg msg, int count)
+            throws IOException, InterruptedException {
+        HashMap<String, String> res = new HashMap<>();
+        for(int i =0;i<count;i++) {
+            Msg msgres = readingqueue.poll(10, TimeUnit.SECONDS);
+            res.put(msgres.getData().getKey(), msgres.getData().getVal());
+            msg.log("Got read response from the queue");
+        }
+        readingqueue.clear();
+        return res;
+    }
+
     public HashMap<String, String> dirtyList(){
         return db.getDb();
+    }
+
+    public HashMap<String, String> syncList() throws IOException, InterruptedException {
+        DataSent ds = new DataSent(Operation.READALL, "", "");
+        Msg msg = new Msg(clock, ds);
+        msg.setSender(node);
+        msg.log("Read all request sent. Total count: " + totalcount);
+        for(String q : queues){
+            try {
+                send(msg, q);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        int othercount = totalcount - db.size();
+        HashMap<String, String> others = waitForResponses(msg, othercount);
+        HashMap<String, String> res = dirtyList();
+        res.putAll(others);
+        return res;
     }
 ////////
 
@@ -197,29 +230,38 @@ public class SyncManager {
          case READRES:
              handleReadRes(msg);
              break;
+         case READALL:
+             handleReadAll(msg);
+             break;
          case REMOVE:
              handleRemove(msg);
              break;
-         case INCR:
-             justIncr(msg);
+         case INCRPUT:
+             justIncr(msg, 1);
+             break;
+         case INCRREM:
+             justIncr(msg, -1);
              break;
          case NONE:
              break;
      }
     }
 
-    private void justIncr(Msg msg){
+    private void justIncr(Msg msg, int diff){
         msg.log("Handling incr request");
+        totalcount +=diff;
         clock = mergeVClocks(msg.getVclock());
     }
 
     private void handlePut(Msg msg){
         msg.log("Handling put request");
+        totalcount++;
         db.put(msg.getData().getKey(), msg.getData().getVal());
     }
 
     private void handleRemove(Msg msg){
         msg.log("Handling remove request");
+        totalcount--;
         db.remove(msg.getData().getKey());
     }
 
@@ -230,8 +272,6 @@ public class SyncManager {
         final DataSent dataSent = new DataSent(Operation.READRES, key, val);
         final Msg msg2 = new Msg(clock, dataSent);
         msg2.setSender(node);
-//        System.out.println("Handle read called for key " + msg2.getData().getKey()
-//                + " and val " + msg2.getData().getVal());
         String dest = ChannelUtils.createReceivingQueueName(msg.getSender());
         try {
             msg2.log("Sending read value");
@@ -241,9 +281,29 @@ public class SyncManager {
         }
     }
 
+    private void handleReadAll(Msg msg){
+        msg.log("Got read all request");
+        HashMap<String, String> hashmap =  db.getDb();
+        Iterator<String> keys = hashmap.keySet().iterator();
+        Iterator<String> vals = hashmap.values().iterator();
+        String dest = ChannelUtils.createReceivingQueueName(msg.getSender());
+        while(keys.hasNext() && vals.hasNext()){
+            String k = keys.next();
+            String v = vals.next();
+            DataSent ds = new DataSent(Operation.READRES, k, v);
+            Msg m = new Msg(clock, ds);
+            m.setSender(node);
+            m.log("Sending data...");
+            try {
+                send(m, dest);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void handleReadRes(Msg msg){
         try {
-//            System.out.println("Putting msg " + msg.getData().getVal());
             msg.log("Got read response.Putting in the queue");
             readingqueue.put(msg);
         } catch (InterruptedException e) {

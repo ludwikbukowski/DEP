@@ -46,7 +46,11 @@ public class UrlController {
         Application.manager.syncRemove(url);
         myurl.setResult("");
         ModelAndView mav = new ModelAndView("result");
-        mav.addObject("list",getAllUrls(Application.manager));
+        try {
+            mav.addObject("list",getAllUrls(Application.manager));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return mav;
     }
 
@@ -60,7 +64,11 @@ public class UrlController {
         url.setResult(res);
         Application.manager.syncPut(hash, urlstring);
         ModelAndView mav = new ModelAndView("result");
-        mav.addObject("list",getAllUrls(Application.manager));
+        try {
+            mav.addObject("list",getAllUrls(Application.manager));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return mav;
     }
 
@@ -88,9 +96,9 @@ public class UrlController {
         }
     }
 
-    List<Url> getAllUrls(SyncManager manager) throws UnknownHostException {
-        List<Url> urls = new ArrayList<Url>();
+    List<Url> getAllUrls(SyncManager manager) throws IOException, InterruptedException {
         HashMap<String, String> hashmap =  manager.dirtyList();
+        List<Url> urls = new ArrayList<Url>();
         Iterator<String> keys = hashmap.keySet().iterator();
         Iterator<String> vals = hashmap.values().iterator();
         while(keys.hasNext() && vals.hasNext()){

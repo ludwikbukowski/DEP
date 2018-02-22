@@ -25,6 +25,11 @@ public class MyDB implements Database {
         return true;
     }
 
+    @Override
+    public int size() {
+        return database.size();
+    }
+
     public boolean clear() {
         database.clear();
         return true;

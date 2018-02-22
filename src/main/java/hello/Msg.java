@@ -35,7 +35,9 @@ public class Msg implements Serializable {
         for(int i =0;i< Main.NODES_NUMBER; i++){
             System.out.print(clock.clocks[i] + ";");
         }
-        System.out.println("], Sender: " + sender +", data sent : " + data.getKey() + ":"+data.getVal());
+        System.out.println("], Sender: " + sender +", data sent : operation:"+data.getOperation()
+                +", data: "
+                + data.getKey() + ":"+data.getVal());
     }
 
     public int getSender() {

@@ -87,7 +87,12 @@ public class Main {
             manager.syncRemove(key);
             System.out.println("Removing " + key + " from db");
         }else if (args[0].equals("list")){
-            HashMap<String, String> wholeDb =  manager.dirtyList();
+            HashMap<String, String> wholeDb = null;
+            try {
+                wholeDb = manager.syncList();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             Iterator<String> keys = wholeDb.keySet().iterator();
             Iterator<String> vals = wholeDb.values().iterator();
             System.out.println("Listing all database:");
