@@ -127,8 +127,8 @@ public class SyncManager {
                     clock.log();
                     msg.getVclock().log();
                     System.out.println("************************************");
-                    processMsg(msg, true);
                     distributeResetVclock();
+                    processMsg(msg, true);
                 }
             }
         }
