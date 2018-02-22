@@ -27,17 +27,15 @@ public class SyncManager {
         this.storeManager = manager;
     }
 
-    public VClock increment(){
-        clock.update(node);
-        return clock;
-    }
-
     public void start() throws IOException, TimeoutException {
         queues = new HashSet<String>();
         channel = connection.createChannel();
-//        System.out.println("Waiting for read...");
-        String queue = ChannelUtils.createReceivingQueueName(node);
         startSendingQueues();
+    }
+
+    public void stop() throws IOException, TimeoutException {
+        channel.close();
+        connection.close();
     }
 
     public void startSendingQueues() throws IOException, TimeoutException {
@@ -47,14 +45,13 @@ public class SyncManager {
                 String name = ChannelUtils.createReceivingQueueName(i);
                 channel.queueDeclare(name, false, false, false, null);
                 queues.add(name);
-//                System.out.println("Creating sending queue " + name);
             }
         }
     }
 
-    public void stop() throws IOException, TimeoutException {
-        channel.close();
-        connection.close();
+    public VClock increment(){
+        clock.update(node);
+        return clock;
     }
 
     public void loadFromList(List<Msg> list) throws IOException {
@@ -63,32 +60,8 @@ public class SyncManager {
             clock = m.getVclock();
         }
     }
-///////  Synchronised calls
-    public void syncPut(String key, String val) throws IOException {
-        DataSent dataSent = new DataSent(Operation.PUT, key, val);
-        Msg msg = new Msg(increment(), dataSent);
-        msg.setSender(node);
 
-        int distnode = ConsistentHashingUtils.getNode(key);
-        // if its local node, just write locally
-        if(distnode == node) {
-            dataSent.setOperation(Operation.INCRPUT);
-            msg.setData(dataSent);
-            msg.log("Local putting");
-            for(String q : queues){
-                send(msg, q);
-            }
-            storeManager.write(msg);
-            db.put(key, val);
-        }else{
-            msg.log("Distributed putting");
-            String n = ChannelUtils.createReceivingQueueName(distnode);
-            notifyAllIncr(n, Operation.INCRPUT);
-            send(msg, n);
-        }
-        totalcount++;
-//        System.out.println("[LOG] Updating '" + dataSent.getKey() + "', '" + dataSent.getVal() + "'");
-    }
+
 
     private void notifyAllIncr(String except, Operation op){
         DataSent dataSent = new DataSent(op, "", "");
@@ -105,109 +78,33 @@ public class SyncManager {
         }
     }
 
-    public void syncRemove(String key) throws IOException {
-        DataSent dataSent = new DataSent(Operation.REMOVE, key, "");
-        Msg msg = new Msg(increment(), dataSent);
-        msg.setSender(node);
-        int distnode = ConsistentHashingUtils.getNode(key);
-        if(distnode == node){
-            dataSent.setOperation(Operation.INCRREM);
-            msg.setData(dataSent);
-            msg.log("Local remove");
-            for(String q : queues){
-                send(msg, q);
-            }
-            storeManager.write(msg);
-            db.remove(key);
-        }else{
-            msg.log("Distributed remove");
-            String n = ChannelUtils.createReceivingQueueName(distnode);
-            notifyAllIncr(n, Operation.INCRREM);
-            send(msg, n);
-        }
-        totalcount--;
-//        System.out.println("[LOG] Removing '" + dataSent.getKey() + "'");
-    }
-///////  Dirty calls
-    public String syncRead(String key) throws IOException, InterruptedException {
-        int distnode = ConsistentHashingUtils.getNode(key);
-//        System.out.println("node is " + node + " and dist is " + distnode);
-        if(distnode == node) {
-            return db.get(key);
-        }else {
-            DataSent dataSent = new DataSent(Operation.READ, key, "");
-            Msg msg = new Msg(clock, dataSent);
-            msg.setSender(node);
-            String n = ChannelUtils.createReceivingQueueName(distnode);
-//            System.out.println("Sending read msg to " + n);
-            msg.log("Sent read request");
-            send(msg, n);
-            return waitForResponse(msg);
-        }
-    }
-
     private String waitForResponse(Msg msg)
             throws IOException, InterruptedException {
-//        System.out.println("Waiting for read response...");
         Msg res = readingqueue.poll(10, TimeUnit.SECONDS);
         readingqueue.clear();
         msg.log("Got read response from the queue");
         return res.getData().getVal();
     }
 
-    private HashMap<String, String> waitForResponses(Msg msg, int count)
-            throws IOException, InterruptedException {
-        HashMap<String, String> res = new HashMap<>();
-        for(int i =0;i<count;i++) {
-            Msg msgres = readingqueue.poll(10, TimeUnit.SECONDS);
-            res.put(msgres.getData().getKey(), msgres.getData().getVal());
-            msg.log("Got read response from the queue");
-        }
-        readingqueue.clear();
-        return res;
-    }
-
     public HashMap<String, String> dirtyList(){
         return db.getDb();
     }
-
-    public HashMap<String, String> syncList() throws IOException, InterruptedException {
-        DataSent ds = new DataSent(Operation.READALL, "", "");
-        Msg msg = new Msg(clock, ds);
-        msg.setSender(node);
-        msg.log("Read all request sent. Total count: " + totalcount);
-        for(String q : queues){
-            try {
-                send(msg, q);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        int othercount = totalcount - db.size();
-        HashMap<String, String> others = waitForResponses(msg, othercount);
-        HashMap<String, String> res = dirtyList();
-        res.putAll(others);
-        return res;
-    }
-////////
 
     public void send(Msg msg, String destinationQueue) throws IOException {
         byte [] byteMessage = SerializationUtils.serialize(msg);
         channel.basicPublish("", destinationQueue, null, byteMessage);
     }
 
-    public void handleSync(Msg msg) throws VClockException, IOException {
-//        System.out.println("Got new msg");
+    public void handleMsg(Msg msg) throws VClockException, IOException {
         if(msg.getSender() == node){
-         // db.Msg from myself, ignore
             System.out.println("ERROR - msg from myself");
         }else {
             if(clock.compareTo(msg.getVclock()) <= 0){
-//                increment();
-//                System.out.println("Compared...");
                 clock = mergeVClocks(msg.getVclock());
                 processMsg(msg);
-                storeManager.write(msg);
+                
+// Disk storage disabled
+//                storeManager.write(msg);
             }else{
                 System.out.println("************************************");
                 System.out.println("Discarding update - old vector clock");
@@ -218,8 +115,8 @@ public class SyncManager {
         }
     }
 
+    //TODO Use polymorphism
     private void processMsg(Msg msg){
-//        System.out.println("Got msg to process");
      switch(msg.getData().getOperation()) {
          case PUT:
              handlePut(msg);
@@ -229,9 +126,6 @@ public class SyncManager {
              break;
          case READRES:
              handleReadRes(msg);
-             break;
-         case READALL:
-             handleReadAll(msg);
              break;
          case REMOVE:
              handleRemove(msg);
@@ -247,11 +141,109 @@ public class SyncManager {
      }
     }
 
+    public VClock mergeVClocks(VClock vc){
+        VClock merged = new VClock(Main.NODES_NUMBER);
+        for(int i = 0;i< Main.NODES_NUMBER;i++) {
+            int a = clock.get(i);
+            int b = vc.get(i);
+            int max = (a <= b) ? b : a;
+            merged.set(i, max);
+        }
+        return merged;
+    }
+
     private void justIncr(Msg msg, int diff){
         msg.log("Handling incr request");
         totalcount +=diff;
         clock = mergeVClocks(msg.getVclock());
     }
+
+    public int getNode() {
+        return node;
+    }
+
+    public void setNode(int node) {
+        this.node = node;
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
+
+    public BlockingQueue getReadingqueue() {
+        return readingqueue;
+    }
+
+    public void setReadingqueue(BlockingQueue readingqueue) {
+        this.readingqueue = readingqueue;
+    }
+
+/////////////// API
+///////////////
+
+public void Put(String key, String val) throws IOException {
+    DataSent dataSent = new DataSent(Operation.PUT, key, val);
+    Msg msg = new Msg(increment(), dataSent);
+    msg.setSender(node);
+    int distnode = ConsistentHashingUtils.getNode(key);
+    if(distnode == node) {
+        dataSent.setOperation(Operation.INCRPUT);
+        msg.setData(dataSent);
+        msg.log("Local putting");
+        for(String q : queues){
+            send(msg, q);
+        }
+        db.put(key, val);
+    }else{
+        msg.log("Distributed putting");
+        String n = ChannelUtils.createReceivingQueueName(distnode);
+        notifyAllIncr(n, Operation.INCRPUT);
+        send(msg, n);
+    }
+    totalcount++;
+}
+
+    public void Remove(String key) throws IOException {
+        DataSent dataSent = new DataSent(Operation.REMOVE, key, "");
+        Msg msg = new Msg(increment(), dataSent);
+        msg.setSender(node);
+        int distnode = ConsistentHashingUtils.getNode(key);
+        if(distnode == node){
+            dataSent.setOperation(Operation.INCRREM);
+            msg.setData(dataSent);
+            msg.log("Local remove");
+            for(String q : queues){
+                send(msg, q);
+            }
+            db.remove(key);
+        }else{
+            msg.log("Distributed remove");
+            String n = ChannelUtils.createReceivingQueueName(distnode);
+            notifyAllIncr(n, Operation.INCRREM);
+            send(msg, n);
+        }
+        totalcount--;
+    }
+
+public String Read(String key) throws IOException, InterruptedException {
+    int distnode = ConsistentHashingUtils.getNode(key);
+    if(distnode == node) {
+        return db.get(key);
+    }else {
+        DataSent dataSent = new DataSent(Operation.READ, key, "");
+        Msg msg = new Msg(clock, dataSent);
+        msg.setSender(node);
+        String n = ChannelUtils.createReceivingQueueName(distnode);
+        msg.log("Sent read request");
+        send(msg, n);
+        return waitForResponse(msg);
+    }
+}
+
+
+
+/////////////// Handlers
+///////////////
 
     private void handlePut(Msg msg){
         msg.log("Handling put request");
@@ -281,27 +273,6 @@ public class SyncManager {
         }
     }
 
-    private void handleReadAll(Msg msg){
-        msg.log("Got read all request");
-        HashMap<String, String> hashmap =  db.getDb();
-        Iterator<String> keys = hashmap.keySet().iterator();
-        Iterator<String> vals = hashmap.values().iterator();
-        String dest = ChannelUtils.createReceivingQueueName(msg.getSender());
-        while(keys.hasNext() && vals.hasNext()){
-            String k = keys.next();
-            String v = vals.next();
-            DataSent ds = new DataSent(Operation.READRES, k, v);
-            Msg m = new Msg(clock, ds);
-            m.setSender(node);
-            m.log("Sending data...");
-            try {
-                send(m, dest);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     private void handleReadRes(Msg msg){
         try {
             msg.log("Got read response.Putting in the queue");
@@ -311,38 +282,4 @@ public class SyncManager {
         }
     }
 
-
-    public VClock mergeVClocks(VClock vc){
-
-        VClock merged = new VClock(Main.NODES_NUMBER);
-        for(int i = 0;i< Main.NODES_NUMBER;i++){
-            int a = clock.get(i);
-            int b = vc.get(i);
-            int max = (a <= b)? b : a;
-            merged.set(i, max);
-        }
-//        System.out.println("Merging " + clock.logString() + " with " +
-//                vc.logString() + " = " + merged.logString());
-        return merged;
-    }
-
-    public int getNode() {
-        return node;
-    }
-
-    public void setNode(int node) {
-        this.node = node;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public BlockingQueue getReadingqueue() {
-        return readingqueue;
-    }
-
-    public void setReadingqueue(BlockingQueue readingqueue) {
-        this.readingqueue = readingqueue;
-    }
 }

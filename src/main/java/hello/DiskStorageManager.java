@@ -39,7 +39,7 @@ public class DiskStorageManager {
         fout.close();
     }
 
-    public List<Msg> read(Integer Id) throws IOException, FileNotFoundException {
+    public List<Msg> read(Integer Id) throws IOException {
         node = createFileName(Id);
         try {
             streamIn = new FileInputStream(createFileName(Id));

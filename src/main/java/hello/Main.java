@@ -52,71 +52,23 @@ public class Main {
         manager.setReadingqueue(readingqueue);
         manager.start();
         disk.setNode(node);
+
+        //
+        // Disk storage disabled
+        //
+
 //        try {
 //            System.out.println("Loading data from local storage...");
-////            List<Msg> list = disk.read(node);
+//            List<Msg> list = disk.read(node);
 ////            manager.loadFromList(list);
 //        }catch(EOFException e){
-//            // No storage to read
-//        }catch(FileNotFoundException e2){
-//            // no storage to read
+////             No storage to read
 //        }
         System.out.println("Starting node " + node);
         // Start listening on specific channels
+
         new Listener(clock, connection, manager, mydb, node).run();
-
-
-//        while(true) {
-//            System.out.println("Run command...");
-//            Scanner scanner = new Scanner(System.in);
-//            String input = scanner.nextLine();
-//            parseCommand(input);
-//        }
-
         return manager;
-    }
-    static void parseCommand(String input) throws IOException, TimeoutException {
-        String [] args = input.split("\\s+");
-        if(args[0].equals("add") && args.length == 3){
-            String key = args[1];
-            String val = args[2];
-            System.out.println("Adding " + key  +" : " + val);
-            manager.syncPut(key, val);
-        }else if (args[0].equals("remove")){
-            String key = args[1];
-            manager.syncRemove(key);
-            System.out.println("Removing " + key + " from db");
-        }else if (args[0].equals("list")){
-            HashMap<String, String> wholeDb = null;
-            try {
-                wholeDb = manager.syncList();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            Iterator<String> keys = wholeDb.keySet().iterator();
-            Iterator<String> vals = wholeDb.values().iterator();
-            System.out.println("Listing all database:");
-            while(keys.hasNext() && vals.hasNext()){
-                System.out.println(keys.next() + ":" + vals.next());
-            }
-        }else if(args[0].equals("get") && args.length == 2){
-            String key = args[1];
-            String val = null;
-            try {
-                val = manager.syncRead(key);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Value for " + key + " is " + val);
-        }else if(args[0].equals("stop")){
-            manager.stop();
-            System.out.println("Stopping...");
-        }else if(args[0].equals("clear")){
-            disk.clear();
-            mydb.clear();
-            clock = new VClock(NODES_NUMBER);
-            System.out.println("Clearing disk storage and RAM storage locally...");
-        }
     }
 
 }

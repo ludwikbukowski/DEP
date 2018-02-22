@@ -8,8 +8,4 @@ public class ChannelUtils {
         return "receivequeue" + a;
     }
 
-//    public static String createSendingQueueName(Integer a, Integer b){
-//        return "receive" + a;
-//    }
-
 }

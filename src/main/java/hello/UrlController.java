@@ -25,7 +25,6 @@ public class UrlController {
 
 
     private String host() throws UnknownHostException {
-//         return InetAddress.getLocalHost().getHostName();
         return "http://localhost";
     }
 
@@ -43,7 +42,7 @@ public class UrlController {
 
     @RequestMapping(value = "/delete", method = RequestMethod.GET)
     public ModelAndView handleDeleteUrl(@ModelAttribute Url myurl, @RequestParam(name="url")String url) throws IOException {
-        Application.manager.syncRemove(url);
+        Application.manager.Remove(url);
         myurl.setResult("");
         ModelAndView mav = new ModelAndView("result");
         try {
@@ -62,7 +61,7 @@ public class UrlController {
         String hash = hasher.make(urlstring);
         String res = fullUrl(hash);
         url.setResult(res);
-        Application.manager.syncPut(hash, urlstring);
+        Application.manager.Put(hash, urlstring);
         ModelAndView mav = new ModelAndView("result");
         try {
             mav.addObject("list",getAllUrls(Application.manager));
@@ -77,7 +76,7 @@ public class UrlController {
         // Get the url based on "hash" element
         String suffix = null;
         try {
-            suffix = Application.manager.syncRead(hash);
+            suffix = Application.manager.Read(hash);
         } catch (IOException e) {
             e.printStackTrace();
         }
