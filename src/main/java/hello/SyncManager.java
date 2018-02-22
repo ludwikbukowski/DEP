@@ -85,6 +85,12 @@ public class SyncManager {
             throws IOException, InterruptedException {
         Msg res = readingqueue.poll(10, TimeUnit.SECONDS);
         readingqueue.clear();
+        if(res==null){
+            System.out.println("************************************");
+            System.out.println("The destination node is down!!!!");
+            System.out.println("************************************");
+            return null;
+        }
         msg.log("Got read response from the queue");
         return res.getData().getVal();
     }
