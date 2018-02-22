@@ -54,12 +54,15 @@ public class SyncManager {
         return clock;
     }
 
-    public void loadFromList(List<Msg> list) throws IOException {
-        for(Msg m : list){
-            processMsg(m);
-            clock = m.getVclock();
-        }
-    }
+    // disk storage disabled
+    //
+    //
+//    public void loadFromList(List<Msg> list) throws IOException {
+//        for(Msg m : list){
+//            processMsg(m, true);
+//            clock = m.getVclock();
+//        }
+//    }
 
 
 
@@ -99,42 +102,69 @@ public class SyncManager {
         if(msg.getSender() == node){
             System.out.println("ERROR - msg from myself");
         }else {
-            if(clock.compareTo(msg.getVclock()) <= 0){
-                clock = mergeVClocks(msg.getVclock());
-                processMsg(msg);
-                
+            if (msg.getVclock().isResetRequest()) {
+                clock = new VClock(Main.NODES_NUMBER);
+                System.out.println("************************************");
+                System.out.println("Reseting vector clock");
+                System.out.println("************************************");
+            } else {
+                if (clock.compareTo(msg.getVclock()) <= 0) {
+                    clock = mergeVClocks(msg.getVclock());
+                    processMsg(msg, false);
+
 // Disk storage disabled
 //                storeManager.write(msg);
-            }else{
-                System.out.println("************************************");
-                System.out.println("Discarding update - old vector clock");
-                clock.log();
-                msg.getVclock().log();
-                System.out.println("************************************");
+
+                } else {
+                    System.out.println("************************************");
+                    System.out.println("Old vector clock");
+                    clock.log();
+                    msg.getVclock().log();
+                    System.out.println("************************************");
+                    processMsg(msg, true);
+                    distributeResetVclock();
+                }
+            }
+        }
+    }
+
+    private void distributeResetVclock(){
+        DataSent ds = new DataSent(Operation.RESETCLOCK, "", "");
+        ArrayList<Integer> vals = new ArrayList<>();
+        vals.add(-1);
+        vals.add(-1);
+        vals.add(-1);
+        VClock specialClock = new VClock(vals);
+        Msg msg = new Msg(specialClock, ds);
+        for(String q : queues){
+            try {
+                send(msg, q);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
 
     //TODO Use polymorphism
-    private void processMsg(Msg msg){
+    private void processMsg(Msg msg, boolean failure){
      switch(msg.getData().getOperation()) {
          case PUT:
-             handlePut(msg);
+             handlePut(msg, failure);
              break;
          case READ:
-             handleRead(msg);
+             handleRead(msg, failure);
              break;
          case READRES:
-             handleReadRes(msg);
+             handleReadRes(msg, failure);
              break;
          case REMOVE:
-             handleRemove(msg);
+             handleRemove(msg, failure);
              break;
          case INCRPUT:
-             justIncr(msg, 1);
+             justIncr(msg, 1, failure);
              break;
          case INCRREM:
-             justIncr(msg, -1);
+             justIncr(msg, -1, failure);
              break;
          case NONE:
              break;
@@ -152,10 +182,14 @@ public class SyncManager {
         return merged;
     }
 
-    private void justIncr(Msg msg, int diff){
-        msg.log("Handling incr request");
-        totalcount +=diff;
-        clock = mergeVClocks(msg.getVclock());
+    private void justIncr(Msg msg, int diff, boolean failure){
+        if(failure){
+            // do nothing
+        }else {
+            msg.log("Handling incr request");
+            totalcount += diff;
+            clock = mergeVClocks(msg.getVclock());
+        }
     }
 
     public int getNode() {
@@ -245,19 +279,27 @@ public String Read(String key) throws IOException, InterruptedException {
 /////////////// Handlers
 ///////////////
 
-    private void handlePut(Msg msg){
-        msg.log("Handling put request");
-        totalcount++;
-        db.put(msg.getData().getKey(), msg.getData().getVal());
+    private void handlePut(Msg msg, boolean failure){
+        if(failure){
+            // Do not PUT
+        }else {
+            msg.log("Handling put request");
+            totalcount++;
+            db.put(msg.getData().getKey(), msg.getData().getVal());
+        }
     }
 
-    private void handleRemove(Msg msg){
-        msg.log("Handling remove request");
-        totalcount--;
-        db.remove(msg.getData().getKey());
+    private void handleRemove(Msg msg, boolean failure){
+        if(failure){
+            // Do not remove
+        }else {
+            msg.log("Handling remove request");
+            totalcount--;
+            db.remove(msg.getData().getKey());
+        }
     }
 
-    private void handleRead(Msg msg){
+    private void handleRead(Msg msg, boolean _failure){
         msg.log("Got read request");
         String key = msg.getData().getKey();
         String val = db.get(key);
@@ -273,7 +315,7 @@ public String Read(String key) throws IOException, InterruptedException {
         }
     }
 
-    private void handleReadRes(Msg msg){
+    private void handleReadRes(Msg msg, boolean _failure){
         try {
             msg.log("Got read response.Putting in the queue");
             readingqueue.put(msg);

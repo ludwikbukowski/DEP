@@ -1,6 +1,7 @@
 package hello;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class VClock implements Serializable{
     public Integer [] clocks = new Integer[Main.NODES_NUMBER];
@@ -21,6 +22,11 @@ public class VClock implements Serializable{
             clocks[i] = 0;
         }
     }
+    public VClock(ArrayList<Integer> vals){
+        for(int i=0; i< vals.size(); i++){
+            clocks[i] = vals.get(i);
+        }
+    }
     synchronized public boolean update(int index){
         if(clocks[index] != null) {
             clocks[index] = clocks[index] + 1;
@@ -28,6 +34,15 @@ public class VClock implements Serializable{
         }
         else
             return false;
+    }
+
+    public boolean isResetRequest(){
+        for(Integer i : clocks){
+            if(i>0){
+                return false;
+            }
+        }
+        return true;
     }
 
     public Integer get(int index){
